@@ -1,0 +1,16 @@
+# Tài liệu nội bộ — hợp đồng, biên bản, hướng dẫn pháp lý.
+# Repo GitHub Pages là công khai nên không đưa thư mục này lên.
+docs/
+
+# Ảnh gốc chưa tối ưu (8.5 MB). Bản dùng cho web là nem-r50.webp / nem-r50.png
+tachnen.png
+
+# Cấu hình công cụ cục bộ
+.claude/
+
+# Rác hệ điều hành và trình soạn thảo
+Thumbs.db
+desktop.ini
+.DS_Store
+.vscode/
+.idea/
