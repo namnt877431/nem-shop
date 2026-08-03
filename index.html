@@ -299,7 +299,8 @@ img{max-width:100%;display:block}
 }
 .plate-head .mono:last-child{opacity:.6}
 
-.classes{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:26px}
+/* tự giãn theo số máy — thêm chiếc thứ ba không cần sửa CSS */
+.classes{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:8px;margin-bottom:26px}
 .class-btn{
   font-family:var(--mono);font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;
   padding:12px 6px;border:1px solid rgba(42,31,29,.3);background:rgba(255,255,255,.34);
@@ -891,8 +892,19 @@ img{max-width:100%;display:block}
 
 <script>
 (function(){
-  /* ── Vòng xoay: các nấc là số ngày, đặt như nấc tốc độ màn trập ── */
+  /* ── Vòng xoay: các nấc là số ngày, đặt như nấc tốc độ màn trập ──
+     Đoạn giữa hai mốc dưới đây do trang quản trị ghi lại mỗi lần xuất
+     file, nên đừng thêm gì khác vào trong khoảng đó. */
+  /* nem:calc:start */
   var DAYS = [1,2,3,5,7,14,30];
+  function discount(d){
+    if (d >= 30) return 0.25;
+    if (d >= 14) return 0.15;
+    if (d >= 7) return 0.1;
+    return 0;
+  }
+  /* nem:calc:end */
+
   var SPAN = 240;                       // độ mở của cung số
   var STEP = SPAN / (DAYS.length - 1);
   var dial   = document.querySelector('.dial');
@@ -920,12 +932,6 @@ img{max-width:100%;display:block}
     dial.appendChild(b);
   });
 
-  function discount(d){
-    if (d >= 30) return .25;
-    if (d >= 14) return .15;
-    if (d >= 7)  return .10;
-    return 0;
-  }
   function vnd(n){ return Math.round(n).toLocaleString('vi-VN'); }
 
   function render(){
