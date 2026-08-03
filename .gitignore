@@ -2,8 +2,13 @@
 # Repo GitHub Pages là công khai nên không đưa thư mục này lên.
 docs/
 
-# Ảnh gốc chưa tối ưu (8.5 MB). Bản dùng cho web là nem-r50.webp / nem-r50.png
+# Ảnh gốc chưa tối ưu, tổng hơn 30 MB. Bản dùng cho web nhẹ hơn ~50 lần:
+#   tachnen.png  (8 MB)  -> nem-r50.webp / nem-r50.png
+#   TACHNEN2.png (10 MB) -> nem-r8.webp  / nem-r8.png
+#   tachnen3.png (15 MB) -> ảnh mẫu bố cục, không dùng trên trang
 tachnen.png
+TACHNEN2.png
+tachnen3.png
 
 # Cấu hình công cụ cục bộ
 .claude/

@@ -75,7 +75,11 @@ img{max-width:100%;display:block}
 .perf::before,.perf::after{
   content:"";position:absolute;left:0;right:0;height:7px;
   background-image:var(--hole);background-size:26px 7px;background-repeat:repeat-x;
+  /* phim chạy đều từ phải sang trái, một ô đúng bằng một bước lặp
+     nên vòng nối liền mạch, không thấy điểm nhảy */
+  animation:filmRun 1.5s linear infinite;
 }
+@keyframes filmRun{to{background-position-x:-26px}}
 .perf::before{top:4px}
 .perf::after{bottom:4px}
 
@@ -211,16 +215,51 @@ img{max-width:100%;display:block}
 }
 .fcount b{color:var(--amber);font-weight:400}
 @media(max-width:1080px){.fcount{display:none}}
+/* Máy tính: chữ bên trái xếp hai tầng, cụm ảnh chiếm trọn cột phải.
+   Cụm ảnh vốn nằm ngang nên không bao giờ cao bằng cột chữ — căn giữa
+   để khoảng trống chia đều trên dưới, thay vì dồn hết xuống đáy. */
 .hero-grid{
-  display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);
-  gap:clamp(36px,5vw,68px);align-items:center;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  /* Dòng nhãn đứng riêng một hàng, nên hàng "lead" bắt đầu đúng ở tiêu đề.
+     Cụm ảnh neo vào hàng đó → mép trên ngang chữ CẦM, không cần số bù. */
+  grid-template-areas:
+    "brow ."
+    "lead shot"
+    "tail shot";
+  grid-template-rows:auto auto auto;
+  column-gap:clamp(26px,3.2vw,46px);
+  align-items:start;
 }
-@media(max-width:940px){.hero-grid{grid-template-columns:1fr;gap:44px}}
+.hero-lead{grid-area:lead}
+.hero-tail{grid-area:tail}
+/* Neo thẳng lên đỉnh cột để mép trên cụm máy ngang hàng dòng nhãn.
+   Cho tràn ra lề phải để ảnh to hơn, bù lại phần trống dưới đáy. */
+.hero-grid .shot{
+  grid-area:shot;align-self:start;
+  margin-right:calc(var(--gutter) * -1);
+}
 
-.eyebrow{display:flex;align-items:center;gap:12px;color:var(--ink-60);margin-bottom:22px}
+/* Điện thoại: tiêu đề lớn → hai máy → chữ nhỏ và các nút */
+@media(max-width:940px){
+  .hero-grid{
+    grid-template-columns:1fr;
+    grid-template-areas:"brow" "lead" "shot" "tail";
+    grid-template-rows:auto auto auto auto;
+    row-gap:clamp(26px,6vw,40px);
+  }
+  /* xếp dọc thì không tràn lề, để khoảng cách giữa các khối đều nhau */
+  .hero-grid .shot{margin-right:0}
+  /* row-gap đã lo khoảng cách, bỏ lề dưới của dòng nhãn kẻo cộng dồn */
+  .eyebrow{margin-bottom:0}
+}
+
+.eyebrow{grid-area:brow;display:flex;align-items:center;gap:12px;color:var(--ink-60);margin-bottom:22px}
 .eyebrow::after{content:"";flex:1;height:1px;background:var(--ink-30);max-width:110px}
 
-.hero h1{font-size:clamp(2.9rem,8vw,6.1rem);font-variation-settings:"wdth" 122,"wght" 800}
+/* Ngắt dòng đã chốt bằng <br>; trần cỡ chữ đặt sao cho dòng dài nhất
+   ("VỀ CUỐI TUẦN") vẫn nằm trọn trong cột nửa trang. */
+.hero h1{font-size:clamp(2.6rem,5.9vw,5.5rem);font-variation-settings:"wdth" 122,"wght" 800}
 .hero h1 em{font-style:normal;color:var(--magenta);font-variation-settings:"wdth" 76,"wght" 750}
 .hero-sub{margin:26px 0 0;max-width:46ch;font-size:1.06rem;color:var(--ink-60)}
 .hero-cta{display:flex;flex-wrap:wrap;gap:14px;margin-top:34px}
@@ -246,19 +285,33 @@ img{max-width:100%;display:block}
 }
 .hero-facts div{display:flex;flex-direction:column;gap:3px;padding:8px 0}
 
-/* ── Ảnh máy đặt trong khung ngắm ── */
+/* ── Hai máy đặt chồng trong khung ngắm ──
+   R8 lùi về trái-trên phía sau, R50 nhô ra phải-dưới phía trước.
+   Hai máy trôi lên xuống ngược pha nhau nên cụm ảnh luôn thở. */
 .shot{margin:0;position:relative}
-.shot picture{display:block}
-.shot img{
+.rig{
+  position:relative;width:100%;
+  /* giữ chỗ để hai ảnh tuyệt đối không làm sập chiều cao */
+  aspect-ratio:1.56;
+}
+.rig picture{position:absolute;display:block}
+.rig img{
   width:100%;height:auto;display:block;
   /* drop-shadow bám theo alpha nên bóng ôm đúng dáng máy, không thành khối chữ nhật */
-  filter:drop-shadow(0 26px 30px rgba(42,31,29,.22)) drop-shadow(0 4px 8px rgba(42,31,29,.12));
+  filter:drop-shadow(0 22px 26px rgba(42,31,29,.24)) drop-shadow(0 4px 8px rgba(42,31,29,.12));
 }
+/* R50 nhỉnh hơn R8 và nhô ra trước, giống bố cục ảnh mẫu */
+.rig .r8 {left:0;  top:0;    width:58%; z-index:1; animation:driftUp 7s ease-in-out infinite}
+.rig .r50{right:0; bottom:0; width:74%; z-index:2; animation:driftDn 7s ease-in-out infinite}
+
+/* cùng chu kỳ, ngược chiều: máy này lên thì máy kia xuống */
+@keyframes driftUp{0%,100%{transform:translateY(0)}    50%{transform:translateY(-15px)}}
+@keyframes driftDn{0%,100%{transform:translateY(0)}    50%{transform:translateY(15px)}}
+
 .shot figcaption{
-  display:block;margin-top:14px;text-align:right;color:var(--ink-60);
+  display:block;margin-top:14px;text-align:left;color:var(--ink-60);
   font-family:var(--mono);font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;
 }
-@media(max-width:940px){.shot figcaption{text-align:left}}
 
 /* ─────────────────────────────────────────────
    SIGNATURE — nắp máy ảnh, vòng xoay = số ngày
@@ -525,6 +578,8 @@ img{max-width:100%;display:block}
   .curtain{display:none}
   .af{display:none}
   .rec i{animation:none;opacity:1}
+  .rig .r8,.rig .r50{animation:none;transform:none}
+  .perf::before,.perf::after{animation:none}
 }
 </style>
 </head>
@@ -569,12 +624,17 @@ img{max-width:100%;display:block}
 
   <div class="wrap hero-grid">
 
-    <div>
-      <p class="mono eyebrow rise" data-delay="1">Canon R50 &amp; R8 · thuê theo ngày</p>
-      <h1 class="display rise" data-delay="2">Cầm máy xịn<br><em>về cuối tuần</em></h1>
+    <!-- Tách làm hai khối để trên điện thoại chèn được ảnh vào giữa:
+         tiêu đề lớn → hai máy → chữ nhỏ và các nút. -->
+    <p class="mono eyebrow rise" data-delay="1">Canon R50 &amp; R8 · thuê theo ngày</p>
+
+    <div class="hero-lead">
+      <h1 class="display rise" data-delay="2">Cầm<br>máy xịn<br><em>về cuối tuần</em></h1>
+    </div>
+
+    <div class="hero-tail">
       <p class="hero-sub rise" data-delay="3">
-        Máy đến tay bạn đã sạc đầy, thẻ đã format, ống kính lau sạch.
-        Nhắn trước một hôm là có. Chưa đủ tiền cọc thì cứ nói, mình luôn tìm được cách.
+        Không sẵn chục triệu đặt cọc? Thẻ sinh viên cũng thuê được.
       </p>
       <div class="hero-cta rise" data-delay="4">
         <a class="btn btn-solid" href="#may">Xem máy</a>
@@ -582,20 +642,27 @@ img{max-width:100%;display:block}
       </div>
 
       <div class="hero-facts rise" data-delay="4">
-        <div><b>Lau kiểm</b><span class="mono">trước mỗi lượt giao</span></div>
-        <div><b>Nhắn là có</b><span class="mono">thường ngay trong ngày</span></div>
-        <div><b>Cọc linh hoạt</b><span class="mono">bàn theo từng người</span></div>
+        <div><b>Nhắn là có</b><span class="mono">thường lấy được trong ngày</span></div>
+        <div><b>Từ 200k</b><span class="mono">một ngày, kèm ống kính</span></div>
+        <div><b>Giấy tờ trả ngay</b><span class="mono">chỉ xem để đối chiếu</span></div>
       </div>
     </div>
 
-    <!-- Chiếc máy thật, đặt giữa khung ngắm -->
+    <!-- Cả hai máy thật, đặt chồng giữa khung ngắm -->
     <figure class="shot rise" data-delay="3">
-      <picture>
-        <source srcset="nem-r50.webp" type="image/webp">
-        <img src="nem-r50.png" width="1500" height="974" fetchpriority="high" decoding="async"
-             alt="Canon EOS R50 thân trắng, đeo ốp da hồng và dây đeo hồng kem, ống kính RF-S 18–45mm">
-      </picture>
-      <figcaption>EOS R50 · ốp da và dây đeo kèm theo máy</figcaption>
+      <div class="rig">
+        <picture class="r8">
+          <source srcset="nem-r8.webp" type="image/webp">
+          <img src="nem-r8.png" width="1500" height="1263" fetchpriority="high" decoding="async"
+               alt="Canon EOS R8 dán skin hoạ tiết sóng, lắp ống kính RF 24–105mm F4 L IS USM">
+        </picture>
+        <picture class="r50">
+          <source srcset="nem-r50.webp" type="image/webp">
+          <img src="nem-r50.png" width="1500" height="974" fetchpriority="high" decoding="async"
+               alt="Canon EOS R50 thân trắng, đeo ốp da hồng và dây đeo hồng kem, ống kính RF-S 18–45mm">
+        </picture>
+      </div>
+      <figcaption>Canon EOS R8 và EOS R50</figcaption>
     </figure>
 
   </div>
@@ -620,14 +687,14 @@ img{max-width:100%;display:block}
   <div class="wrap">
     <div class="sec-head rise">
       <h2 class="display">Kho máy</h2>
-      <p>Máy nào cũng được lau và kiểm kỹ trước khi đến tay bạn.</p>
+      <p>Trước mỗi lần giao, mình lau ống kính, kiểm màn trập và sạc đầy pin.</p>
     </div>
 
     <div class="fleet rise">
       <article class="frame picked">
         <span class="frame-no">1 ▸ aps-c</span>
         <h3>Canon<br>EOS R50</h3>
-        <p class="who">Nhẹ, dễ cầm, bám nét vào mắt rất tốt. Hợp cho chuyến đi chơi, quay vlog, hoặc lần đầu bạn cầm máy rời.</p>
+        <p class="who">Nhẹ, dễ cầm, bắt nét vào mắt rất nhạy. Hợp đi chơi, quay vlog, hay lần đầu bạn cầm máy rời.</p>
         <ul class="spec">
           <li>Cảm biến<b>24.2MP APS-C</b></li>
           <li>Ống kính kèm<b>RF-S 18–45mm</b></li>
@@ -640,7 +707,7 @@ img{max-width:100%;display:block}
       <article class="frame">
         <span class="frame-no">1A ▸ full-frame</span>
         <h3>Canon<br>EOS R8</h3>
-        <p class="who">Cảm biến full-frame trong thân máy vẫn nhỏ gọn. Chọn máy này khi chụp tối, chụp chân dung xóa phông, hoặc quay 4K 60p.</p>
+        <p class="who">Full-frame mà thân vẫn nhỏ gọn. Lấy máy này khi chụp trong quán tối, chụp chân dung muốn xoá phông sâu, hay quay 4K 60p.</p>
         <ul class="spec">
           <li>Cảm biến<b>24.2MP Full-frame</b></li>
           <li>Ống kính kèm<b>RF 24–50mm</b></li>
@@ -652,8 +719,8 @@ img{max-width:100%;display:block}
     </div>
 
     <div class="fleet-foot rise">
-      <span class="mono">Vòng magenta = máy được thuê nhiều hơn</span>
-      <span class="mono">Máy nào cũng kèm pin, sạc, thẻ nhớ và dây đeo</span>
+      <span class="mono">Vòng hồng là máy được thuê nhiều hơn</span>
+      <span class="mono">Cần ống kính khác thì nhắn trước một hôm</span>
     </div>
   </div>
 </section>
@@ -663,7 +730,7 @@ img{max-width:100%;display:block}
   <div class="wrap">
     <div class="sec-head rise">
       <h2 class="display">Tính thử<br>tiền thuê</h2>
-      <p>Chọn máy, xoay vòng chọn số ngày. Thuê càng dài thì mỗi ngày càng nhẹ đi.</p>
+      <p>Chọn máy rồi xoay vòng chọn số ngày. Thuê càng dài, tiền mỗi ngày càng nhẹ.</p>
     </div>
 
     <div class="calc-grid rise">
@@ -697,22 +764,21 @@ img{max-width:100%;display:block}
               <span class="price" id="price">600.000</span><span class="unit">đ</span>
             </div>
             <span class="saving" id="saving" hidden></span>
-            <p class="note">Chưa gồm khoản đặt cọc — hoàn lại đủ khi bạn trả máy.</p>
+            <p class="note">Chưa tính tiền cọc. Cọc trả lại đủ khi bạn mang máy về.</p>
           </div>
         </div>
       </div>
 
       <div class="calc-side">
-        <h3>Con số này<br>đã gồm những gì</h3>
-        <p>Không có phí ẩn. Những thứ dưới đây nằm sẵn trong giá, bạn không trả thêm.</p>
+        <h3>Trong giá<br>đã có sẵn</h3>
+        <p>Không phụ phí. Cầm máy đi là đủ đồ.</p>
         <ul class="calc-list">
-          <li>Ống kính kit<b>Có sẵn</b></li>
-          <li>Pin và sạc<b>Có sẵn</b></li>
-          <li>Thẻ nhớ đã format<b>Có sẵn</b></li>
-          <li>Ốp da và dây đeo<b>Có sẵn</b></li>
-          <li>Lau kiểm trước khi giao<b>Có sẵn</b></li>
+          <li>Ống kính<b>kit theo máy</b></li>
+          <li>Pin<b>kèm sạc</b></li>
+          <li>Thẻ nhớ<b>trống sẵn</b></li>
+          <li>Ốp da, dây đeo<b>kèm máy</b></li>
         </ul>
-        <a class="btn btn-solid" href="#dat-coc">Còn tiền cọc thì sao</a>
+        <a class="btn btn-solid" href="#dat-coc">Chuyện tiền cọc</a>
       </div>
     </div>
   </div>
@@ -723,30 +789,30 @@ img{max-width:100%;display:block}
   <div class="wrap">
     <div class="sec-head rise">
       <h2 class="display">Cách thuê</h2>
-      <p>Lần đầu mất khoảng mười lăm phút. Những lần sau chỉ còn nhắn tin và hẹn giờ.</p>
+      <p>Lần đầu mất chừng 15 phút. Từ lần sau chỉ cần nhắn tin và hẹn giờ.</p>
     </div>
   </div>
   <div class="wrap">
     <div class="steps rise">
       <div class="step">
-        <span class="mono">Bước một</span>
-        <h3>Nhắn tin<br>chọn ngày</h3>
-        <p>Nói bạn cần máy nào, từ hôm nào đến hôm nào. Tôi giữ máy chờ bạn.</p>
+        <span class="mono">Bước 1</span>
+        <h3>Nhắn xem<br>còn máy không</h3>
+        <p>Bạn cần máy nào, từ hôm nào tới hôm nào. Mình giữ máy chờ bạn.</p>
       </div>
       <div class="step">
-        <span class="mono">Bước hai</span>
-        <h3>Gặp nhau,<br>xem máy</h3>
-        <p>Bạn cầm thử, bấm thử. Hai bên ký giấy và quay một đoạn ngắn ghi lại tình trạng máy lúc đó.</p>
+        <span class="mono">Bước 2</span>
+        <h3>Gặp nhau,<br>thử máy</h3>
+        <p>Bạn cầm thử, bấm vài kiểu. Ký giấy rồi quay một đoạn ngắn ghi lại máy lúc giao.</p>
       </div>
       <div class="step">
-        <span class="mono">Bước ba</span>
-        <h3>Đi chụp<br>thoải mái</h3>
-        <p>Cần thêm ngày cứ nhắn. Máy trục trặc thì gọi tôi trước, đừng tự mở.</p>
+        <span class="mono">Bước 3</span>
+        <h3>Cầm máy<br>đi chụp</h3>
+        <p>Cần thêm ngày cứ nhắn. Máy dở chứng thì gọi mình trước, đừng tự tháo.</p>
       </div>
       <div class="step">
-        <span class="mono">Bước bốn</span>
-        <h3>Trả máy,<br>lấy lại cọc</h3>
-        <p>Máy nguyên vẹn, đúng hẹn thì tôi trả cọc ngay tại chỗ.</p>
+        <span class="mono">Bước 4</span>
+        <h3>Trả máy,<br>lấy cọc</h3>
+        <p>Máy lành lặn, đúng hẹn thì mình đưa lại cọc ngay tại chỗ.</p>
       </div>
     </div>
   </div>
@@ -757,39 +823,39 @@ img{max-width:100%;display:block}
   <div class="wrap">
     <div class="sec-head rise">
       <h2 class="display">Chuyện<br>tiền cọc</h2>
-      <p>Cọc một thân máy là khoản lớn với sinh viên. Không có sẵn tiền cũng không sao — có mấy cách khác.</p>
+      <p>Cọc nguyên một cái máy thì không phải ai cũng sẵn tiền. Chưa có cũng không sao, mình còn mấy cách khác.</p>
     </div>
 
     <div class="holds rise">
       <div class="hold">
         <span class="mono">Cách 1</span>
         <h3>Cọc<br>bằng tiền</h3>
-        <p>Gọn nhất. Trả máy xong là nhận lại nguyên vẹn.</p>
+        <p>Gọn nhất. Trả máy xong nhận lại đủ, không thiếu đồng nào.</p>
       </div>
 
       <div class="hold">
         <span class="mono">Cách 2</span>
         <h3>Gửi lại<br>một món đồ</h3>
-        <p>Điện thoại, laptop, hay chiếc xe bạn không dùng tới trong mấy hôm đó.</p>
+        <p>Điện thoại, laptop, hay cái xe bạn không đụng tới trong mấy hôm đó.</p>
       </div>
 
       <div class="hold">
         <span class="mono">Cách 3</span>
         <h3>Thẻ sinh viên<br>là đủ</h3>
-        <p>Kèm số của một người tôi có thể gọi khi cần. Dành cho bạn nào đã thuê quen.</p>
+        <p>Kèm số một người mình gọi được khi cần. Dành cho bạn nào thuê quen rồi.</p>
       </div>
 
       <div class="hold">
         <span class="mono">Cách 4</span>
         <h3>Nhờ người nhà<br>đứng cùng</h3>
-        <p>Một người thân cùng ký tên với bạn. Không cần cọc thêm gì.</p>
+        <p>Người nhà ký tên cùng bạn là xong, khỏi cọc thêm gì.</p>
       </div>
     </div>
 
     <div class="hold-note rise">
       <span class="mono">Nói trước cho rõ</span>
-      <p>Không có cách nào là mặc định. Bạn nhắn cho tôi hoàn cảnh của mình, hai bên chọn cách nào
-         mà cả hai đều thấy yên tâm rồi mới ghi vào giấy.</p>
+      <p>Không có cách nào là mặc định cả. Bạn cứ kể hoàn cảnh của mình, chọn được cách nào
+         cả hai cùng yên tâm thì mới ghi vào giấy.</p>
     </div>
   </div>
 </section>
@@ -799,23 +865,23 @@ img{max-width:100%;display:block}
   <div class="wrap">
     <div class="sec-head rise">
       <h2 class="display">Rõ ràng<br>từ đầu</h2>
-      <p>Bạn đang gửi đồ và thông tin cho một người quen qua mạng. Ba điều tôi muốn nói trước.</p>
+      <p>Bạn giao tiền và giấy tờ cho một người mới gặp lần đầu. Ba điều mình nói trước cho yên tâm.</p>
     </div>
 
     <div class="trust rise">
       <div class="tcell">
-        <h3>Tôi <b>không giữ</b><br>căn cước của bạn</h3>
-        <p>Chỉ xem tại chỗ để đối chiếu, rồi bạn cầm về ngay. Ảnh chụp giấy tờ tôi cất riêng và xóa khi không còn cần đến.</p>
+        <h3>Mình <b>không giữ</b><br>căn cước của bạn</h3>
+        <p>Chỉ xem tại chỗ để đối chiếu rồi bạn cầm về luôn. Ảnh chụp giấy tờ mình để riêng, xong việc là xoá.</p>
       </div>
 
       <div class="tcell">
         <h3>Đoạn video<br>là của cả hai</h3>
-        <p>Lúc giao máy mình quay chung một đoạn ngắn. Sau này có thắc mắc về vết xước nào, cả hai cùng nhìn vào một chỗ.</p>
+        <p>Lúc giao máy hai bên quay chung một đoạn ngắn. Sau này thắc mắc vết xước nào thì mở ra xem, khỏi ai phải nhớ.</p>
       </div>
 
       <div class="tcell">
         <h3>Có hỏng thì<br>xem giá trước</h3>
-        <p>Tôi mang máy đi bảo hành lấy báo giá, gửi bạn xem cùng ảnh. Thống nhất rồi mới trừ vào cọc.</p>
+        <p>Mình mang máy ra hãng lấy báo giá, chụp ảnh gửi bạn xem. Bạn gật rồi mới trừ vào cọc.</p>
       </div>
     </div>
   </div>
@@ -826,33 +892,33 @@ img{max-width:100%;display:block}
   <div class="wrap">
     <div class="sec-head rise">
       <h2 class="display">Hỏi đáp</h2>
-      <p>Còn thắc mắc gì khác, nhắn thẳng cho tôi.</p>
+      <p>Còn thắc mắc gì cứ nhắn thẳng cho mình.</p>
     </div>
 
     <div class="faq rise">
       <details open>
-        <summary>Tôi là sinh viên, chưa có tiền cọc thì sao?</summary>
-        <p>Vẫn thuê được. Phần lớn các bạn sinh viên chọn gửi lại điện thoại hoặc laptop, hoặc nhờ người nhà ký cùng. Bạn cứ nhắn cho tôi hoàn cảnh của mình, mình tìm cách hợp lý cho cả hai.</p>
+        <summary>Chưa có tiền cọc thì thuê được không?</summary>
+        <p>Được chứ. Cọc không nhất thiết phải là tiền mặt. Bạn kể hoàn cảnh, mình chọn cách hợp cho cả hai.</p>
       </details>
       <details>
-        <summary>R50 hay R8 thì hợp với tôi hơn?</summary>
-        <p>Đi chơi, quay vlog, chụp ban ngày thì R50 là đủ và nhẹ hơn nhiều. Chụp trong quán tối, chụp chân dung muốn xóa phông mạnh, hoặc quay 4K 60p thì lấy R8. Không chắc thì nhắn cho tôi biết bạn định chụp gì.</p>
+        <summary>Nên chọn R50 hay R8?</summary>
+        <p>Đi chơi, quay vlog, chụp ban ngày thì R50 là đủ, lại nhẹ hơn hẳn. Chụp trong quán tối, chân dung muốn xoá phông sâu, hay quay 4K 60p thì lấy R8. Chưa chắc thì nhắn cho mình biết bạn định chụp gì.</p>
       </details>
       <details>
-        <summary>Cần chuẩn bị gì khi đi nhận máy?</summary>
-        <p>Mang căn cước bản gốc để tôi đối chiếu tại chỗ, và món đồ đặt cọc nếu hai bên đã thống nhất. Mình gặp nhau khoảng mười lăm phút: bạn bấm thử máy, ký giấy, quay một đoạn ngắn rồi cầm máy đi.</p>
+        <summary>Đi nhận máy cần mang gì?</summary>
+        <p>Căn cước bản gốc, và món đồ đặt cọc nếu hai bên đã chốt. Gặp nhau chừng 15 phút là xong.</p>
       </details>
       <details>
-        <summary>Đang thuê mà cần thêm ngày thì sao?</summary>
-        <p>Nhắn cho tôi trước giờ hẹn trả. Miễn chưa có ai đặt tiếp thì tôi gia hạn ngay, tính thêm theo ngày. Về trễ mà không báo trước mới bị tính phí.</p>
+        <summary>Muốn giữ máy thêm vài hôm?</summary>
+        <p>Nhắn cho mình trước giờ hẹn trả. Chưa ai đặt tiếp thì mình gia hạn ngay, tính thêm theo ngày. Về trễ mà không báo mới bị tính phí.</p>
       </details>
       <details>
         <summary>Lỡ làm xước hoặc rơi máy thì tính sao?</summary>
-        <p>Gọi cho tôi trước đã, và đừng tự mở máy hay tự lau cảm biến. Tôi mang đi bảo hành lấy báo giá rồi gửi bạn xem; thống nhất con số xong mới trừ vào cọc. Hao mòn thường khi dùng thì không tính.</p>
+        <p>Gọi cho mình trước đã. Đừng tự tháo máy hay lau cảm biến — chỗ đó hay hỏng thêm. Xước dăm do dùng bình thường thì không tính.</p>
       </details>
       <details>
-        <summary>Có cho thuê máy film hay ống kính rời không?</summary>
-        <p>Hiện chưa. Bạn cần gì cứ nói, nhiều người hỏi thì tôi sẽ sắm thêm.</p>
+        <summary>Có máy film hay ống kính rời không?</summary>
+        <p>Chưa có. Bạn cần gì cứ nói, nhiều người hỏi là mình sắm thêm.</p>
       </details>
     </div>
   </div>
@@ -868,7 +934,7 @@ img{max-width:100%;display:block}
       <div>
         <h2 class="display">Giữ máy cho cuối tuần này</h2>
         <!-- TODO: thay số điện thoại thật -->
-        <a class="btn btn-solid" style="background:var(--amber);color:var(--ink);border-color:var(--amber)" href="tel:+84000000000">Nhắn cho NEM shop</a>
+        <a class="btn btn-solid" style="background:var(--amber);color:var(--ink);border-color:var(--amber)" href="tel:+84000000000">Nhắn giữ máy</a>
       </div>
       <div class="foot-col">
         <span class="mono">Giao nhận</span>
@@ -951,7 +1017,7 @@ img{max-width:100%;display:block}
 
     if (off > 0){
       saveEl.hidden = false;
-      saveEl.textContent = 'Thuê dài · giảm ' + Math.round(off*100) + '% · bớt ' + vnd(state.rate*state.days*off) + ' đ';
+      saveEl.textContent = 'Thuê dài được giảm ' + Math.round(off*100) + '% · bớt ' + vnd(state.rate*state.days*off) + ' đ';
     } else {
       saveEl.hidden = true;
     }
@@ -1052,7 +1118,7 @@ img{max-width:100%;display:block}
     hero.addEventListener('pointermove', function(e){
       px = e.clientX; py = e.clientY;
       af.classList.add('on');
-      var hit = e.target.closest('.btn,.shot img,a');
+      var hit = e.target.closest('.btn,.rig picture,a');
       locked = (hit && hero.contains(hit)) ? hit : null;
       schedule();
     });
