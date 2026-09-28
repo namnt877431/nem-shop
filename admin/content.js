@@ -68,15 +68,13 @@
 
     calc: {
       title: 'Tính thử\ntiền thuê',
-      sub: 'Chọn máy, xoay vòng chọn số ngày. Thuê càng dài thì mỗi ngày càng nhẹ đi.',
+      sub: 'Chọn máy, xoay vòng chọn một buổi hay số ngày. Thuê từ hai ngày là có bớt.',
       plateLeft: 'Tính giá thuê',
       plateRight: 'NEM shop · vnd',
-      days: [1, 2, 3, 5, 7, 14, 30],
-      tiers: [
-        { days: 7, percent: 10 },
-        { days: 14, percent: 15 },
-        { days: 30, percent: 25 }
-      ],
+      days: [0.5, 1, 2, 3, 5, 7, 14, 30],
+      sessionPart: 65,      // một buổi tính bao nhiêu % giá ngày
+      off2Day: 10000,       // thuê đúng hai ngày, bớt bấy nhiêu cho cả đơn
+      offPerDay: 10000,     // từ ba ngày trở lên, bớt bấy nhiêu mỗi ngày
       note: 'Chưa gồm khoản đặt cọc — hoàn lại đủ khi bạn trả máy.',
       sideTitle: 'Con số này\nđã gồm những gì',
       sideSub: 'Không có phí ẩn. Những thứ dưới đây nằm sẵn trong giá, bạn không trả thêm.',
@@ -247,19 +245,22 @@
   /* ── Đoạn cấu hình giá nằm trong <script> của index.html ────── */
   function calcBlock(calc) {
     var days = (calc.days || []).slice().sort(function (a, b) { return a - b; });
-    var tiers = (calc.tiers || []).slice()
-      .filter(function (t) { return t.days > 0 && t.percent > 0; })
-      .sort(function (a, b) { return b.days - a.days; });   // mốc cao xét trước
 
-    var lines = [];
-    lines.push('  var DAYS = [' + days.join(',') + '];');
-    lines.push('  function discount(d){');
-    tiers.forEach(function (t) {
-      lines.push('    if (d >= ' + t.days + ') return ' + (t.percent / 100) + ';');
-    });
-    lines.push('    return 0;');
-    lines.push('  }');
-    return lines.join('\n');
+    return [
+      '  var DAYS = [' + days.join(',') + '];   // 0.5 là nấc "một buổi"',
+      '  var SESSION_PART = ' + ((Number(calc.sessionPart) || 0) / 100) +
+        ';            // một buổi tính ' + (Number(calc.sessionPart) || 0) + '% giá ngày, làm tròn tới chục nghìn',
+      '  var OFF_2DAY     = ' + (Number(calc.off2Day) || 0) +
+        ';           // thuê đúng hai ngày: bớt cho cả đơn',
+      '  var OFF_PER_DAY  = ' + (Number(calc.offPerDay) || 0) +
+        ';           // từ ba ngày trở lên: bớt mỗi ngày',
+      '  function priceOf(rate, d){',
+      '    if (d < 1)   return Math.round(rate * SESSION_PART / 10000) * 10000;',
+      '    if (d === 2) return rate * 2 - OFF_2DAY;',
+      '    if (d >= 3)  return (rate - OFF_PER_DAY) * d;',
+      '    return rate * d;',
+      '  }'
+    ].join('\n');
   }
 
   var CALC_RE = /(\/\* nem:calc:start \*\/)[\s\S]*?(\/\* nem:calc:end \*\/)/;

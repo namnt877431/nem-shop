@@ -106,8 +106,13 @@ Sau khi xuất, `git diff index.html` để xem đúng những gì mình vừa �
 /* nem:calc:end */
 ```
 
-Các nấc số ngày trên vòng xoay và bảng mốc giảm giá nằm giữa hai mốc đó, và
-bị ghi đè mỗi lần xuất file. Đừng thêm mã nào khác vào khoảng giữa.
+Các nấc trên vòng xoay và công thức tính tiền nằm giữa hai mốc đó, và bị ghi
+đè mỗi lần xuất file. Đừng thêm mã nào khác vào khoảng giữa.
+
+Cách tính đang dùng: một buổi bằng 65% giá ngày (làm tròn tới chục nghìn),
+thuê đúng hai ngày bớt 10.000 đ cho cả đơn, từ ba ngày trở lên bớt 10.000 đ
+mỗi ngày. Ba con số này sửa được ở **Nội dung trang ▸ Mục tính giá**. Nấc
+`0.5` trong danh sách nấc chính là nấc "một buổi".
 
 ## Trạng thái một đơn đi qua
 

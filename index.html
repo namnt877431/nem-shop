@@ -730,7 +730,7 @@ img{max-width:100%;display:block}
   <div class="wrap">
     <div class="sec-head rise">
       <h2 class="display">Tính thử<br>tiền thuê</h2>
-      <p>Chọn máy rồi xoay vòng chọn số ngày. Thuê càng dài, tiền mỗi ngày càng nhẹ.</p>
+      <p>Chọn máy rồi xoay vòng chọn một buổi hay số ngày. Thuê từ hai ngày là có bớt.</p>
     </div>
 
     <div class="calc-grid rise">
@@ -747,11 +747,11 @@ img{max-width:100%;display:block}
         </div>
 
         <div class="dial-row">
-          <div class="dial" role="radiogroup" aria-label="Chọn số ngày thuê">
+          <div class="dial" role="radiogroup" aria-label="Chọn một buổi hay số ngày thuê">
             <div class="needle" id="needle"></div>
             <div class="dial-core">
               <div>
-                <span class="mono">Ngày</span>
+                <span class="mono" id="unitBig">Ngày</span>
                 <strong id="dayBig">3</strong>
                 <small id="clsName">Canon R50</small>
               </div>
@@ -761,7 +761,7 @@ img{max-width:100%;display:block}
           <div class="counter">
             <div class="window">
               <span class="mono">Tổng tạm tính</span>
-              <span class="price" id="price">600.000</span><span class="unit">đ</span>
+              <span class="price" id="price">570.000</span><span class="unit">đ</span>
             </div>
             <span class="saving" id="saving" hidden></span>
             <p class="note">Chưa tính tiền cọc. Cọc trả lại đủ khi bạn mang máy về.</p>
@@ -962,12 +962,15 @@ img{max-width:100%;display:block}
      Đoạn giữa hai mốc dưới đây do trang quản trị ghi lại mỗi lần xuất
      file, nên đừng thêm gì khác vào trong khoảng đó. */
   /* nem:calc:start */
-  var DAYS = [1,2,3,5,7,14,30];
-  function discount(d){
-    if (d >= 30) return 0.25;
-    if (d >= 14) return 0.15;
-    if (d >= 7) return 0.1;
-    return 0;
+  var DAYS = [0.5,1,2,3,5,7,14,30];   // 0.5 là nấc "một buổi"
+  var SESSION_PART = 0.65;            // một buổi tính 65% giá ngày, làm tròn tới chục nghìn
+  var OFF_2DAY     = 10000;           // thuê đúng hai ngày: bớt cho cả đơn
+  var OFF_PER_DAY  = 10000;           // từ ba ngày trở lên: bớt mỗi ngày
+  function priceOf(rate, d){
+    if (d < 1)   return Math.round(rate * SESSION_PART / 10000) * 10000;
+    if (d === 2) return rate * 2 - OFF_2DAY;
+    if (d >= 3)  return (rate - OFF_PER_DAY) * d;
+    return rate * d;
   }
   /* nem:calc:end */
 
@@ -976,6 +979,7 @@ img{max-width:100%;display:block}
   var dial   = document.querySelector('.dial');
   var needle = document.getElementById('needle');
   var dayBig = document.getElementById('dayBig');
+  var unitBig= document.getElementById('unitBig');
   var clsName= document.getElementById('clsName');
   var priceEl= document.getElementById('price');
   var saveEl = document.getElementById('saving');
@@ -988,10 +992,10 @@ img{max-width:100%;display:block}
     var b = document.createElement('button');
     b.className = 'stop';
     b.type = 'button';
-    b.textContent = d;
+    b.textContent = d < 1 ? '1/2' : d;   // '1/2' chứ không phải '½': glyph ½ hay thiếu trong subset font
     b.setAttribute('role','radio');
     b.setAttribute('aria-checked', d === state.days ? 'true' : 'false');
-    b.setAttribute('aria-label', d + ' ngày');
+    b.setAttribute('aria-label', d < 1 ? 'Một buổi' : d + ' ngày');
     b.dataset.days = d;
     b.style.transform = 'rotate('+a+'deg) translateY(-82px) rotate('+(-a)+'deg)';
     b.addEventListener('click', function(){ setDays(d); });
@@ -1008,16 +1012,26 @@ img{max-width:100%;display:block}
       b.setAttribute('aria-checked', +b.dataset.days === state.days ? 'true' : 'false');
     });
 
-    dayBig.textContent  = state.days;
+    dayBig.textContent  = state.days < 1 ? Math.round(state.days * 2) : state.days;
+    unitBig.textContent = state.days < 1 ? 'Buổi' : 'Ngày';
     clsName.textContent = state.name;
 
-    var off   = discount(state.days);
-    var total = state.rate * state.days * (1 - off);
+    var total = priceOf(state.rate, state.days);
     priceEl.textContent = vnd(total);
 
+    // Nấc "một buổi" không so với giá ngày được, nên nói thẳng cách tính.
+    if (state.days < 1){
+      saveEl.hidden = false;
+      saveEl.textContent = 'Một buổi tính bằng ' + Math.round(SESSION_PART*100) + '% giá một ngày';
+      return;
+    }
+
+    var off = state.rate * state.days - total;
     if (off > 0){
       saveEl.hidden = false;
-      saveEl.textContent = 'Thuê dài được giảm ' + Math.round(off*100) + '% · bớt ' + vnd(state.rate*state.days*off) + ' đ';
+      saveEl.textContent = state.days === 2
+        ? 'Thuê hai ngày bớt ' + vnd(off) + ' đ'
+        : 'Từ ba ngày, mỗi ngày bớt ' + vnd(OFF_PER_DAY) + ' đ · bớt tất cả ' + vnd(off) + ' đ';
     } else {
       saveEl.hidden = true;
     }

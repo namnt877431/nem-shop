@@ -19,3 +19,7 @@ desktop.ini
 .DS_Store
 .vscode/
 .idea/
+
+# Gói npm cài tạm lúc kiểm thử — trang không cần build, đừng đưa lên repo
+node_modules/
+package-lock.json

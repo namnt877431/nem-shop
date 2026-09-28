@@ -249,11 +249,21 @@
   function cameraName(id) { var c = cameraById(id); return c ? c.name : '— máy đã xoá —'; }
   function customerName(id) { var c = customerById(id); return c ? c.name : '— khách đã xoá —'; }
 
-  function discountFor(days) {
-    var tiers = (state.content && state.content.calc && state.content.calc.tiers) || [];
-    var best = 0;
-    tiers.forEach(function (t) { if (days >= t.days && t.percent > best) best = t.percent; });
-    return best;
+  // Bảng giá của shop: thuê đúng hai ngày bớt một khoản cho cả đơn, từ ba ngày
+  // trở lên bớt theo từng ngày. Nấc "một buổi" chỉ có ở trang tính thử —
+  // đơn thuê trong này luôn đếm theo ngày.
+  function listPrice(rate, days) {
+    var c = (state.content && state.content.calc) || {};
+    if (days === 2) return rate * 2 - (Number(c.off2Day) || 0);
+    if (days >= 3) return (rate - (Number(c.offPerDay) || 0)) * days;
+    return rate * days;
+  }
+
+  // Khoản bớt quy ra phần trăm để ghi vào đơn, làm tròn cho dễ đọc.
+  function discountFor(rate, days) {
+    var full = rate * days;
+    if (full <= 0) return 0;
+    return Math.round((full - listPrice(rate, days)) / full * 100);
   }
 
   function priceOf(rate, days, percent) {
@@ -524,7 +534,7 @@
 
     // Đơn cũ có mức giảm khác mốc mặc định thì coi như đã chốt tay, đừng đè lên.
     var touchedDiscount = !isNew &&
-      (b.discount_percent || 0) !== discountFor(UI.spanDays(b.start_date, b.end_date));
+      (b.discount_percent || 0) !== discountFor(b.day_rate || 0, UI.spanDays(b.start_date, b.end_date));
 
     var f = UI.form([
       { name: 'code', label: 'Mã đơn', type: 'text',
@@ -591,16 +601,21 @@
         return;
       }
 
-      // Mốc giảm giá tự áp theo số ngày, trừ khi chủ shop đã tự gõ tay
-      if (!touchedDiscount) f.set('discount_percent', discountFor(days));
-
       var rate = f.get('day_rate');
+
+      // Khoản bớt tự áp theo số ngày, trừ khi chủ shop đã tự gõ tay
+      if (!touchedDiscount) f.set('discount_percent', discountFor(rate, days));
+
       var pct = f.get('discount_percent');
-      f.set('total', priceOf(rate, days, pct));
+      // Chưa gõ tay thì lấy thẳng bảng giá, khỏi lệch vì phần trăm đã làm tròn
+      var total = touchedDiscount ? priceOf(rate, days, pct) : listPrice(rate, days);
+      f.set('total', total);
 
       summary.appendChild(h('span', { class: 'mono', text: days + ' ngày × ' + UI.money(rate) }));
-      if (pct > 0) summary.appendChild(h('span', { class: 'mono ok', text: 'giảm ' + pct + '%' }));
-      summary.appendChild(h('b', { text: UI.money(priceOf(rate, days, pct)) }));
+      if (total < rate * days) {
+        summary.appendChild(h('span', { class: 'mono ok', text: 'bớt ' + UI.money(rate * days - total) }));
+      }
+      summary.appendChild(h('b', { text: UI.money(total) }));
 
       var hit = clashes(f.get('camera_id'), start, end, b.id);
       if (hit.length) {
@@ -1158,9 +1173,11 @@
       { name: 'title', label: 'Tiêu đề mục', type: 'textarea', rows: 2 },
       { name: 'sub', label: 'Câu dẫn', type: 'text', wide: true },
       { name: 'days', label: 'Các nấc số ngày', type: 'text', wide: true,
-        hint: 'Cách nhau bằng dấu phẩy. Đây là các nấc trên vòng xoay.' },
-      { name: 'tiers', label: 'Mốc giảm giá', type: 'pairs', wide: true,
-        keyLabel: 'Từ ? ngày', valLabel: 'Giảm ?%' },
+        hint: 'Cách nhau bằng dấu phẩy. Đây là các nấc trên vòng xoay. Số 0.5 là nấc "một buổi".' },
+      { name: 'sessionPart', label: 'Một buổi bằng ?% giá ngày', type: 'number', min: 1, max: 100,
+        hint: 'Tiền một buổi làm tròn tới chục nghìn.' },
+      { name: 'off2Day', label: 'Thuê hai ngày, bớt cả đơn', type: 'money' },
+      { name: 'offPerDay', label: 'Từ ba ngày, bớt mỗi ngày', type: 'money' },
       { name: 'note', label: 'Ghi chú dưới ô tiền', type: 'textarea', rows: 2, wide: true },
       { type: 'divider', label: 'Cột bên phải' },
       { name: 'sideTitle', label: 'Tiêu đề cột', type: 'textarea', rows: 2 },
@@ -1172,17 +1189,16 @@
       { name: 'plateLeft', label: 'Nhãn trái', type: 'text' },
       { name: 'plateRight', label: 'Nhãn phải', type: 'text' }
     ], Object.assign({}, c.calc, {
-      days: (c.calc.days || []).join(', '),
-      tiers: (c.calc.tiers || []).map(function (t) { return { k: String(t.days), v: String(t.percent) }; })
+      days: (c.calc.days || []).join(', ')
     })), function (v) {
       Object.assign(c.calc, v);
       c.calc.days = String(v.days).split(',')
-        .map(function (s) { return parseInt(s.trim(), 10); })
+        .map(function (s) { return parseFloat(s.trim()); })
         .filter(function (n) { return n > 0; });
-      if (!c.calc.days.length) c.calc.days = [1, 2, 3, 5, 7, 14, 30];
-      c.calc.tiers = (v.tiers || []).map(function (p) {
-        return { days: parseInt(p.k, 10) || 0, percent: parseInt(p.v, 10) || 0 };
-      }).filter(function (t) { return t.days > 0 && t.percent > 0; });
+      if (!c.calc.days.length) c.calc.days = [0.5, 1, 2, 3, 5, 7, 14, 30];
+      c.calc.sessionPart = Number(v.sessionPart) || 65;
+      c.calc.off2Day = Number(v.off2Day) || 0;
+      c.calc.offPerDay = Number(v.offPerDay) || 0;
     }));
 
     /* — Các mục dạng danh sách — */
